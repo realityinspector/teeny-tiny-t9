@@ -1,6 +1,18 @@
 .DS_Store
 node_modules/
 dist/
+.env
+
+# IMT autoresearch
+autoresearch_checkpoint.json
+autoresearch_results.json
+rigor_results.json
+vast_instances.json
+imt_auto/data/
+imt_auto/diary/
+imt_auto/*.tar.gz
+.railway
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -24,3 +24,4 @@ n/a	1431	8	discard	base91 estimate: decoder cost negates 17-char savings
 n/a	1431	8	discard	all sort alternatives: rev+sort is optimal
 8b08bdd	1391	4	keep	precompute W+D at module level, for loop t9, drop arrow in print
 91bd1d5	1383	3	keep	t9=lambda*_:D, drop query echo, no trailing newline
+dbdf9c1	1381	3	keep	bytes-mode unfold, d[0]&3 bitwise decode

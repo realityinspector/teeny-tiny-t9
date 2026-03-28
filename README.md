@@ -1,8 +1,6 @@
 # teeny-tiny-t9
 
-**2KB of Python that contains 617 English words and a complete T9 predictive text engine.**
-
-No dependencies. No training. No neural network. Just a shape that unfolds.
+**24 lines of Python. 1KB seed. 617 words. Full T9.**
 
 ```
 $ python main.py 843 4663 2255
@@ -11,137 +9,105 @@ $ python main.py 843 4663 2255
 2255 -> ball, call
 ```
 
-## The Shape
+## How It Works
 
-A 2,051-character string encodes the 617 most common English words
-as a compressed prefix trie. A one-line function unfolds it:
+A 1,041-byte binary seed decompresses into a 2,051-character shape string.
+The shape is a prefix trie: `^` branches between groups, `]` opens a prefix,
+`|` forks between suffixes. One list comprehension walks it:
 
 ```python
-S = "a]ble|ct|dd|ge|go|ir|ll|lso|m|n|nd|ny|rea|rm|rmy|rt|sk|t|te|way^ba]ck|d|g|ll..."
-
-unfold = lambda s=S: [p+x for b in s.split("^") for p,_,t in [b.partition("]")] for x in t.split("|")]
-
->>> unfold()
-['able', 'act', 'add', 'age', 'ago', 'air', 'all', 'also', ... ]  # 617 words
+unfold = lambda s=S: [p+x for b in s.split("^")
+    for p,_,t in [b.partition("]")] for x in t.split("|")]
 ```
 
-The `^` branches between prefix groups. The `]` opens a prefix. The `|` forks between suffixes.
-Every word in the dictionary grows from one walk through this shape.
+617 words fall out. A 26-character keypad string maps them to T9:
 
-## How T9 Works
+```python
+K = "22233344455566677778889999"   #  a->2, b->2, c->2, d->3, ...
+```
 
-T9 maps phone keys to letters. Multiple words share the same key sequence:
+That's the whole engine.
+
+## T9 Keypad
 
 ```
-    ┌─────┬─────┬─────┐
-    │ 2   │ 3   │ 4   │
-    │ abc │ def │ ghi │
-    ├─────┼─────┼─────┤
-    │ 5   │ 6   │ 7   │
-    │ jkl │ mno │pqrs │
-    ├─────┼─────┼─────┤
-    │ 8   │ 9   │     │
-    │ tuv │wxyz │     │
-    └─────┴─────┘     │
-                      │
-    617 words  ───────┘
-    505 key sequences
-     95 collisions
+    ┌───────┬───────┬───────┐
+    │ 2 abc │ 3 def │ 4 ghi │
+    ├───────┼───────┼───────┤
+    │ 5 jkl │ 6 mno │ 7 pqrs│
+    ├───────┼───────┼───────┤
+    │ 8 tuv │ 9 wxyz│       │
+    └───────┴───────┘
 ```
 
 ## The Numbers
 
 ```
-   617 words
- 2,051 characters of shape data
-    19 lines of logic
-     0 dependencies
-     0 training time
-   100% top-5 accuracy
-  81.8% top-1 accuracy (theoretical ceiling)
+    617 words          0 dependencies
+  2,051 char shape     0 training time
+  1,041 byte seed     24 lines of code
+    505 T9 sequences  100% top-5 accuracy
+     95 collisions   81.8% top-1 accuracy (theoretical ceiling)
 ```
 
-### Why 81.8% is the ceiling
+### Why 81.8% is the maximum
 
-505 unique key sequences map to 617 words. 410 sequences have exactly
-one word — always correct. 95 sequences are ambiguous (multiple words
-share the same keys). You can only guess one, so at most 505/617 = 81.8%.
-
-```
-  Ambiguity breakdown:
-
-  1 word  ████████████████████████████████████████░░  410 sequences
-  2 words ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   81 sequences
-  3 words █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   11 sequences
-  4 words ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    3 sequences
-           0        100       200       300       400     500
-```
-
-The top-5 accuracy is **100%** because no group has more than 4 words.
-
-### Famous collisions
+505 unique digit sequences for 617 words. 410 have one word (always right).
+95 share keys with other words. Best you can do: 505/617 = 81.8%.
 
 ```
-  843  -> the, tie           4653 -> gold, golf, hold, hole
-  4663 -> gone, good, home   2273 -> base, card, care, case
-  729  -> pay, raw, saw, say  227 -> bar, cap, car
+  1 word  ████████████████████████████████████████░░  410
+  2 words ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   81
+  3 words █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   11
+  4 words ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    3
 ```
 
-### Word length distribution
+Top-5 = **100%** because no group exceeds 4.
+
+### Compression layers
 
 ```
-  2 ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  23
-  3 ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 152
-  4 ████████████████████████████████████████░ 442
+  English words       2,357 bytes   ██████████████████████████████
+  Readable shape      2,051 chars   ██████████████████████████░░░░
+  zlib(shape)         1,041 bytes   █████████████░░░░░░░░░░░░░░░░░
+  information min      ~467 bytes   ██████░░░░░░░░░░░░░░░░░░░░░░░░
 ```
 
-## What We Proved Along the Way
+## What We Proved
 
-This repo started as a research project asking: *can a neural network beat
-a lookup table at T9?*
+This repo started as a neural network research project: eigenspace projections,
+spectral initialization, CMA-ES search, transformers, rented GPUs, 40,000 lines of code.
 
-We tried everything:
-- Eigenspace projection (SVD of input-output correlation)
-- Spectral weight initialization (CMA-ES search over singular value shapes)
-- Task-aligned anisotropy (rotating eigenvectors toward class centroids)
-- A custom transformer architecture (T9T)
-- 30+ automated experiments on rented GPUs
+The finding: `numpy.linalg.lstsq(X, Y)` — one line — hits 81.8%, the theoretical
+ceiling. Every neural network scored lower. T9 is a lookup problem.
 
-The answer: **no.** `numpy.linalg.lstsq(X, Y)` — a single line — achieves
-81.8%, the theoretical maximum. Every neural network we trained scored lower.
+So we deleted the neural networks and shipped the lookup table.
 
 ```
-  Approach                   Accuracy   vs Ceiling
-  ─────────────────────────  ────────   ──────────
-  np.linalg.lstsq (1 line)    81.8%    ████████████████████ 100%
-  Eigenspace + 2-layer MLP    74.6%    ██████████████████░░  91%
-  T9T Transformer (50 ep)     23.0%    █████░░░░░░░░░░░░░░░  28%
-  Xavier MLP (50 ep)            1.3%    ░░░░░░░░░░░░░░░░░░░░   2%
+  np.linalg.lstsq       81.8%    ████████████████████ ceiling
+  Eigenspace + MLP       74.6%    ██████████████████░░
+  T9 Transformer         23.0%    █████░░░░░░░░░░░░░░░
+  Xavier MLP              1.3%    ░░░░░░░░░░░░░░░░░░░░
 ```
-
-T9 is a lookup problem, not a learning problem. The optimal solution
-is a table, not a function. So we built the table — and compressed it
-into a shape.
 
 ## Usage
 
 ```bash
-python main.py                         # print all 617 words
-python main.py 843                     # T9 lookup: "the, tie"
-python main.py 843 4663 2255 5878      # batch lookup
+python main.py                    # print all 617 words
+python main.py 843                # the, tie
+python main.py 843 4663 2255      # batch lookup
 ```
 
 ```python
 from main import unfold, t9
-
-words = unfold()          # 617 words from the shape
-ix = t9()                 # {digit_string: [words]}
-ix["4663"]                # ['gone', 'good', 'home']
+words = unfold()                  # 617 words
+ix = t9()                         # {digits: [words]}
+ix["4663"]                        # ['gone', 'good', 'home']
 ```
 
 ## Requirements
 
-None. Pure Python, stdlib only.
+None.
 
 ## License
 

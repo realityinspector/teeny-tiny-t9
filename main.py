@@ -1,198 +1,54 @@
 #!/usr/bin/env python3
-"""
-main.py - Inverse Morphogenic Training: T9 Crystal Discovery
+"""2KB shape that unfolds to 617 English words, then solves T9."""
 
-Tests which 3D topological shape, when its spectral properties constrain
-neural network initialization, best nucleates T9 predictive text capability.
+S = (
+    "a]ble|ct|dd|ge|go|ir|ll|lso|m|n|nd|ny|rea|rm|rmy|rt|sk|t|te|way^ba]ck|d|"
+    "g|ll|nd|nk|r|se|th^be]|ar|at|d|en|ll|st^bi]g|ll|rd|t^bl]ow|ue^bo]at|dy|m"
+    "b|ne|ok|rn|th|x|y^bu]g|rn|s|sy|t|y^by]^ca]ll|lm|me|mp|n|p|r|rd|re|se|st|"
+    "t^ce]ll^ch]in^ci]ty^cl]ub^co]at|de|ld|me|ok|ol|py|re|st^cr]ew|op^cu]p|t^"
+    "da]d|rk|ta|te|y^de]ad|al|ar|ep^di]d|e|g^do]|g|or|wn^dr]aw|op|ug|y^du]st|"
+    "ty^e]ach|ar|arn|ast|at|dge|gg|lse|nd|ven|ver|vil|ye^fa]ce|ct|il|ir|ll|n|"
+    "r|rm|st|t|te^fe]ar|ed|el|ll|w^fi]le|ll|lm|nd|ne|re|rm|sh|t|ve|x^fl]at|ow"
+    "|y^fo]od|ot|r|rm|ur^fr]ee|om^fu]el|ll|n|nd^ga]in|me|s|ve^ge]t^gi]ft|rl|v"
+    "e^gl]ad^go]|al|d|es|ld|lf|ne|od|t^gr]ab|ay|ew|ow^gu]lf|n|y^ha]d|ir|lf|ll"
+    "|nd|ng|rd|rm|s|t|te|ve^he]|ad|ar|at|lp|r|re|ro^hi]de|gh|ll|m|s|t^ho]ld|l"
+    "e|ly|me|pe|st|t|ur|w^hu]ge|ng|rt^i]ce|dea|f|ll|n|ron|s|t|tem|ts^j]ack|ob"
+    "|oin|ump|ury|ust^ke]en|ep|pt|y^ki]ck|d|ll|nd|ng^kn]ee|ew|ow^la]ck|dy|id|"
+    "ke|nd|ne|st|te|w|y^le]ad|ft|g|ss|t^li]e|fe|ft|ke|ne|nk|p|st|ve^lo]ck|ng|"
+    "ok|rd|se|ss|st|t|ve|w^lu]ck^ma]d|de|il|in|ke|le|n|p|rk|ss|y^me]|al|an|et"
+    "|t^mi]le|nd|ne|ss|x^mo]de|m|od|on|re|st|ve^mu]ch|d|st^my]^na]me^ne]ar|ck"
+    "|ed|t|w|ws|xt^ni]ce|ne^no]|ne|r|se|t|te|w^nu]t^o]dd|dds|f|ff|il|ld|n|nce"
+    "|ne|nly|nto|pen|r|ur|ut|ver|wn^pa]ce|ck|ge|id|in|ir|le|lm|rk|rt|ss|st|th"
+    "|y^pe]ak|n|r|t^pi]ck|e|le|n|ne|nk^pl]an|ay|ot|us^po]em|et|ll|ol|or|p|rt|"
+    "st|t|ur^pr]ay^pu]ll|re|sh|t^ra]ce|in|n|nk|re|te|w^re]ad|al|ar|d|ly|st^ri"
+    "]ce|ch|d|de|ng|se|sk^ro]ad|ck|le|ll|of|om|ot|pe|se|w^ru]le|n|sh^sa]d|fe|"
+    "id|ke|le|lt|me|nd|ng|t|ve|w|y^se]a|at|ed|ek|em|en|lf|ll|nd|nt|t^sh]e|ip|"
+    "op|ot|ow|ut^si]ck|de|gn|ng|nk|r|t|te|x|ze^sk]in|y^sl]ip|ow^sn]ow^so]|ft|"
+    "il|ld|le|me|n|ng|on|rt|ul^sp]in|ot^st]ar|ay|ep|op^su]ch|it|n|re^sw]im^ta"
+    "]il|ke|le|lk|ll|nk|pe|sk^te]am|ll|n|nd|rm|st|xt^th]an|at|e|em|en|ey|in|i"
+    "s|us^ti]e|ll|me|ny|p|re^to]|e|ld|ne|o|ok|ol|p|ps|rn|ur|wn^tr]ee|ip|ue|y^"
+    "tu]rn^tw]in|o^ty]pe^u]nit|p|pon|s|se|sed|ser^v]an|ast|ery|ice|iew|ote^wa"
+    "]ge|it|ke|lk|ll|nt|r|rm|rn|s|sh|ve|y^we]|ak|ar|ek|ll|nt|re|st|t^wh]at|en"
+    "|o|om|y^wi]de|fe|ld|ll|n|nd|ne|ng|re|se|sh|th^wo]n|od|rd|re|rk|rm|rn^wr]"
+    "ap^y]ard|eah|ear|es|et|ou|our^z]one"
+)
 
-Exports the winning shape as a 3D-printable STL file.
+unfold = lambda s=S: [p+x for b in s.split("^") for p,_,t in [b.partition("]")] for x in t.split("|")]
 
-Usage:
-    pip install numpy scipy numpy-stl
-    python main.py
-
-Author: IMT Research
-"""
-import sys
-import os
-import time
-import numpy as np
-
-# Add current dir to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from search import run_search
-from shapes import make_t9_candidates
-from topology import TopologicalFeatures
-from stl_export import export_graph_stl
-
-
-def print_banner():
-    print("""
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║   ██╗███╗   ███╗████████╗                                    ║
-║   ██║████╗ ████║╚══██╔══╝                                    ║
-║   ██║██╔████╔██║   ██║     Inverse Morphogenic Training      ║
-║   ██║██║╚██╔╝██║   ██║     T9 Crystal Nucleation Engine      ║
-║   ██║██║ ╚═╝ ██║   ██║                                       ║
-║   ╚═╝╚═╝     ╚═╝   ╚═╝                                      ║
-║                                                              ║
-║   Hypothesis: A 3D topological shape can encode the          ║
-║   capability lattice for T9 predictive text. Its spectral    ║
-║   properties constrain NN initialization such that the       ║
-║   network learns T9 faster than random init.                 ║
-║                                                              ║
-║   Output: The shape that best nucleates T9, as a             ║
-║   3D-printable STL file.                                     ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-""")
-
-
-def print_results(results, baseline):
-    print(f"\n{'='*60}")
-    print(f"  RESULTS — RANKED BY NUCLEATION QUALITY")
-    print(f"{'='*60}\n")
-
-    # Sort by avg_score descending
-    ranked = sorted(results, key=lambda r: r.avg_score, reverse=True)
-
-    print(f"  {'Rank':<5} {'Shape':<22} {'Score':>8} {'±':>3} "
-          f"{'Acc@1':>7} {'MRR':>7} {'Genus':>6} {'Params':>7}")
-    print(f"  {'─'*70}")
-
-    for i, r in enumerate(ranked):
-        genus = r.topo.cycle_rank if r.topo else '?'
-        marker = " ◄ BEST" if i == 0 else ""
-        print(f"  {i+1:<5} {r.name:<22} {r.avg_score:>7.4f}  ±"
-              f"{r.std_score:>5.3f} {r.metrics['acc1']:>7.3f} "
-              f"{r.metrics['mrr']:>7.3f} {str(genus):>6} "
-              f"{r.n_params:>7}{marker}")
-
-    print(f"  {'─'*70}")
-    print(f"  {'base':<5} {'random_xavier':<22} {baseline.avg_score:>7.4f}  ±"
-          f"{baseline.std_score:>5.3f} {baseline.metrics['acc1']:>7.3f} "
-          f"{baseline.metrics['mrr']:>7.3f} {'n/a':>6} "
-          f"{baseline.n_params:>7}")
-
-    # Compute speedup
-    best = ranked[0]
-    if baseline.avg_score > 0:
-        advantage = ((best.avg_score - baseline.avg_score)
-                     / baseline.avg_score * 100)
-    else:
-        advantage = float('inf')
-
-    print(f"\n  Winner: {best.name}")
-    print(f"  Advantage over random init: {advantage:+.1f}%")
-
-    if best.topo:
-        print(f"\n  Topology of winning crystal:")
-        print(f"    Nodes: {best.topo.n_nodes}")
-        print(f"    Edges: {best.topo.n_edges}")
-        print(f"    Genus (cycle rank): {best.topo.cycle_rank}")
-        print(f"    Euler characteristic: {best.topo.euler_char}")
-        print(f"    Spectral gap: {best.topo.spectral_gap:.4f}")
-        print(f"    Fiedler value: {best.topo.fiedler:.4f}")
-
-    return ranked[0]
-
-
-def export_winner(results):
-    """Export the winning shape as STL."""
-    candidates = make_t9_candidates()
-    winner_name = results.name
-
-    # Find the matching graph
-    winner_graph = None
-    for g in candidates:
-        if g.name == winner_name:
-            winner_graph = g
-            break
-
-    if winner_graph is None:
-        print("  [!] Could not find winner graph for STL export")
-        return None
-
-    filename = f"t9_crystal_{winner_name}.stl"
-    export_graph_stl(winner_graph, filename, scale=20.0, resolution=24)
-
-    # Also compute mesh stats for the printable shape
-    verts, faces = winner_graph.to_mesh(res=24)
-    dims = (verts.max(axis=0) - verts.min(axis=0)) * 20.0  # in mm
-
-    print(f"\n  3D-Printable STL exported: {filename}")
-    print(f"  Dimensions: {dims[0]:.1f} x {dims[1]:.1f} x {dims[2]:.1f} mm")
-    print(f"  Faces: {len(faces)}")
-    print(f"  Vertices: {len(verts)}")
-
-    return filename
-
-
-def learning_curve_comparison(results, baseline):
-    """Print ASCII learning curves for top shapes vs baseline."""
-    print(f"\n{'='*60}")
-    print(f"  LEARNING CURVES (loss over epochs)")
-    print(f"{'='*60}\n")
-
-    ranked = sorted(results, key=lambda r: r.avg_score, reverse=True)
-    to_show = ranked[:3] + [baseline]
-    labels = [r.name[:15] for r in ranked[:3]] + ["random_baseline"]
-
-    max_loss = max(max(r.learning_curve) for r in to_show
-                   if r.learning_curve)
-    width = 50
-    n_epochs = len(to_show[0].learning_curve)
-
-    # Show every 5th epoch
-    for epoch in range(0, n_epochs, max(1, n_epochs // 8)):
-        print(f"  epoch {epoch:>3}: ", end="")
-        for i, r in enumerate(to_show):
-            if epoch < len(r.learning_curve):
-                loss = r.learning_curve[epoch]
-                bar_len = int(loss / max(max_loss, 1e-6) * 20)
-                label = labels[i][:8]
-                print(f"  {label:>8} {'█' * bar_len} {loss:.3f}", end="")
-        print()
-
-
-def main():
-    print_banner()
-
-    t_start = time.time()
-
-    # Run the search
-    results, baseline = run_search(n_epochs=30, n_seeds=3, verbose=True)
-
-    t_elapsed = time.time() - t_start
-
-    # Print ranked results
-    winner = print_results(results, baseline)
-
-    # Learning curve comparison
-    learning_curve_comparison(results, baseline)
-
-    # Export STL
-    print(f"\n{'='*60}")
-    print(f"  EXPORTING 3D-PRINTABLE CRYSTAL")
-    print(f"{'='*60}")
-
-    stl_file = export_winner(winner)
-
-    # Summary
-    print(f"\n{'='*60}")
-    print(f"  IMT NUCLEATION COMPLETE")
-    print(f"{'='*60}")
-    print(f"  Time: {t_elapsed:.1f}s")
-    print(f"  Winner: {winner.name}")
-    print(f"  The T9 crystal shape is: {stl_file}")
-    print(f"\n  This shape's topology, when used to constrain NN weight")
-    print(f"  initialization, produces faster T9 learning than random init.")
-    print(f"  Print it. Hold the shape of T9 in your hand.\n")
-
-    return stl_file
-
+def t9(W=None):
+    K = "22233344455566677778889999"
+    d = {}
+    for w in (W or unfold()):
+        d.setdefault("".join(K[ord(c)-97] for c in w), []).append(w)
+    return d
 
 if __name__ == "__main__":
-    main()
+    import sys
+    W = unfold()
+    if sys.argv[1:]:
+        ix = t9(W)
+        for q in sys.argv[1:]:
+            print(q, "->", ", ".join(ix.get(q, ["?"])))
+    else:
+        print(f"{len(S)} chars -> {len(W)} words\n")
+        print(*W)

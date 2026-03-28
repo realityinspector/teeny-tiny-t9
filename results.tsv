@@ -17,3 +17,8 @@ d5eaf5d	1481	5	keep	hoisted sys import, print with *unpack instead of join
 ee08dea	1454	5	keep (readability)	split semicolons into newlines, same byte count
 0aca192	1460	8	keep (readability)	def t9 with K string, space separator, readable structure
 43cca26	1431	8	keep	reversed delta encoding, suffix sharing
+n/a	1431	8	discard	Re-Pair grammar: bz2 already captures bigrams, +44 worse
+n/a	1431	8	discard	freq remapping: +20 worse
+n/a	1431	8	discard	5-bit packing: +594 worse
+n/a	1431	8	discard	base91 estimate: decoder cost negates 17-char savings
+n/a	1431	8	discard	all sort alternatives: rev+sort is optimal

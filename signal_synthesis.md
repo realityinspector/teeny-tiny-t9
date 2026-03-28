@@ -368,6 +368,83 @@ larger word lists (10K, 100K words), the crossover might favor a
 generative approach where the *model itself compresses* while the
 per-word information stays constant.
 
+## Experimental Results (2026-03-28)
+
+### Spectral Analysis of the Delta String
+
+```
+  Delta string:           2,322 chars, 30 unique byte values
+  Shannon entropy:        3.91 bits/symbol
+  Shannon floor:          1,134 bytes
+  bz2 actual:             868 bytes  ← BELOW first-order Shannon!
+  First-order diff H:     5.53 bits/symbol (worse — already decorrelated)
+  Strongest autocorr:     lag 4 (0.35), lag 3 (0.25) — word-fragment length
+```
+
+**Key finding:** bz2 already exploits higher-order patterns (BWT captures
+multi-symbol contexts) that first-order entropy analysis cannot see. The
+delta encoding provides excellent decorrelation for bz2's algorithm. DCT/
+wavelet approaches would need to work in a domain that bz2 already handles
+well — no gap to exploit.
+
+### T9 Two-Stream Encoding (Approach 3)
+
+Actual measurements:
+
+```
+  Stream                    raw      bz2     b85
+  ───────────────────────  ─────    ─────   ─────
+  T9 keys (digit seqs)    2,369      949   1,187
+  Letter-choice bits           —      690     863
+  Combined                     —    1,639   2,050
+  Current (delta+bz2)     2,322      868   1,085
+```
+
+**The two-stream approach is ~2x WORSE.** Separating T9 structure from
+letter choices destroys the cross-stream correlations that bz2 exploits
+when they're interleaved in the delta encoding.
+
+The T9 keys *alone* (949 bytes bz2) are already larger than our entire
+current blob (868 bytes). This is because the keys are a lossy projection
+of the words — they add a second representation without removing enough
+information from the first.
+
+### Disambiguation Analysis
+
+```
+  Per-letter choice bits:    4,540 bits = 568 bytes
+  Entropy (ideal):           3,795 bits = 475 bytes
+  Collision disambiguation:    252 bits =  32 bytes
+  Non-colliding words:       410 / 617 (66%)
+```
+
+The 475-byte entropy of letter choices confirms the information content.
+Even with a perfect codec, the two-stream approach can't beat single-stream
+because the key stream adds ~950 bytes on top.
+
+### Verdict
+
+The current delta-encoded bz2 approach is near-optimal because:
+
+1. **Delta encoding** captures prefix sharing (the dominant structure)
+2. **bz2's BWT** captures higher-order letter patterns across words
+3. **Interleaving** T9 structure with letter choices lets bz2 see both
+4. **Separating** the streams destroys this synergy
+
+The 868-byte blob is likely within 10-15% of the Kolmogorov complexity
+of this word list. Further compression would require exploiting English
+phonotactic knowledge that no stdlib compressor can provide.
+
+### Remaining viable paths
+
+1. **Custom arithmetic coder** with a phonotactic language model — but
+   the model + coder code likely exceeds any data savings
+2. **Smaller word list** — remove the least common words (lossy)
+3. **Better pre-compression transform** — some undiscovered delta variant
+   that gives bz2 better context windows
+4. **Different compressor** — PPM might beat bz2 on this data, but Python
+   stdlib doesn't include one
+
 ## Running the Loop
 
 ```bash

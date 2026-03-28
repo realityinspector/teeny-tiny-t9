@@ -1,0 +1,16 @@
+commit	bytes	lines	status	description
+8882bdd	1907	22	keep	base85 encoding + drop shebang/docstring
+6911a03	1821	14	keep	minimize whitespace, 1-space indent, condense blocks
+n/a	1821	14	discard	raw byte literal: 3102 vs 1348 for b85
+365e556	1722	14	keep	bz2 instead of zlib, 99 byte savings on blob
+e4f67c0	1600	17	keep	delta-encoded sorted words, bz2+b85
+1f52955	1571	16	keep	merged imports, string fallback for ix.get
+a172a55	1555	14	keep	inline K in t9, hardcode 617, simplify CLI
+n/a	1555	14	discard	radical data compression: no approach beat current encoding
+4f4d2da	1543	13	keep	inline S into unfold default, __name__<'a' guard
+fbfa3ed	1518	9	keep	walrus comprehension unfold, single-line blob
+bfb1d92	1506	7	keep	lambda unfold with p default, T9 formula, merged import line
+d652b84	1496	5	keep	condensed __main__ with and/or pattern, inline t9() calls
+d5eaf5d	1481	5	keep	hoisted sys import, print with *unpack instead of join
+62d2f24	1456	3	keep	inlined sys.argv, combined prints, t9 lambda, eliminated a variable
+2d57c4a	1454	3	keep	simplified unknown key default from list to string

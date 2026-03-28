@@ -16,3 +16,4 @@ d5eaf5d	1481	5	keep	hoisted sys import, print with *unpack instead of join
 2d57c4a	1454	3	keep	simplified unknown key default from list to string
 ee08dea	1454	5	keep (readability)	split semicolons into newlines, same byte count
 0aca192	1460	8	keep (readability)	def t9 with K string, space separator, readable structure
+43cca26	1431	8	keep	reversed delta encoding, suffix sharing

@@ -2,6 +2,4 @@ import bz2,base64;unfold=lambda s=bz2.decompress(base64.b85decode(b"LRx4!F+o`-Q&
 def t9(W=None):
  d={};[d.setdefault("".join(str((ord(c)-91-(c>'r')-(c>'y'))//3)for c in w),[]).append(w)for w in(W or unfold())];return d
 if __name__<"a":
- import sys;a=sys.argv[1:]
- if a:ix=t9();[print(q,"->",", ".join(ix.get(q,"?")))for q in a]
- else:print("617 words");print(*unfold())
+ import sys;a=sys.argv[1:];a and[print(q,"->",", ".join(t9().get(q,"?")))for q in a]or(print("617 words"),print(*unfold()))

@@ -7,10 +7,8 @@ def unfold(s=S):
  for d in s.split(','):w=p[:int(d[0])]+d[1:];W+=[w];p=w
  return W
 def t9(W=None):
- K="22233344455566677778889999";d={}
- for w in(W or unfold()):d.setdefault("".join(K[ord(c)-97]for c in w),[]).append(w)
- return d
+ d={};[d.setdefault("".join("22233344455566677778889999"[ord(c)-97]for c in w),[]).append(w)for w in(W or unfold())];return d
 if __name__=="__main__":
- import sys;W=unfold();a=sys.argv[1:]
- if a:ix=t9(W);[print(q,"->",", ".join(ix.get(q,"?")))for q in a]
- else:print(f"{len(W)} words\n");print(*W)
+ import sys;a=sys.argv[1:]
+ if a:ix=t9();[print(q,"->",", ".join(ix.get(q,"?")))for q in a]
+ else:print("617 words\n");print(*unfold())

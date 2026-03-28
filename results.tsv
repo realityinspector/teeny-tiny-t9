@@ -14,3 +14,4 @@ d652b84	1496	5	keep	condensed __main__ with and/or pattern, inline t9() calls
 d5eaf5d	1481	5	keep	hoisted sys import, print with *unpack instead of join
 62d2f24	1456	3	keep	inlined sys.argv, combined prints, t9 lambda, eliminated a variable
 2d57c4a	1454	3	keep	simplified unknown key default from list to string
+ee08dea	1454	5	keep (readability)	split semicolons into newlines, same byte count

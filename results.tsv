@@ -22,3 +22,4 @@ n/a	1431	8	discard	freq remapping: +20 worse
 n/a	1431	8	discard	5-bit packing: +594 worse
 n/a	1431	8	discard	base91 estimate: decoder cost negates 17-char savings
 n/a	1431	8	discard	all sort alternatives: rev+sort is optimal
+8b08bdd	1391	4	keep	precompute W+D at module level, for loop t9, drop arrow in print

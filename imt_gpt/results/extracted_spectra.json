@@ -42,6 +42,12 @@
       0.4513843653868133
     ]
   },
+  "group_frob_norms": {
+    "attention": 138.03614234924316,
+    "ffn_up": 199.2998301188151,
+    "ffn_down": 184.56741841634116,
+    "embedding": 497.58845138549805
+  },
   "lam": 1.0,
   "description": "Spectra extracted from pretrained GPT-2 weights"
 }

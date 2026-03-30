@@ -104,8 +104,9 @@ def cmd_extract():
     print("Loading pretrained GPT-2...")
     model = GPT2LMHeadModel.from_pretrained("gpt2")
 
-    # Collect singular value distributions per group
+    # Collect singular value distributions and Frobenius norms per group
     group_svs = {ATTN_PROJ: [], FFN_UP: [], FFN_DOWN: [], EMBED: []}
+    group_frobs = {ATTN_PROJ: [], FFN_UP: [], FFN_DOWN: [], EMBED: []}
 
     print("Extracting singular values...")
     with torch.no_grad():
@@ -120,12 +121,15 @@ def cmd_extract():
             if W.dim() > 2:
                 W = W.reshape(W.shape[0], -1)
 
+            frob = torch.norm(W, 'fro').item()
+            group_frobs[group].append(frob)
+
             s = torch.linalg.svdvals(W)
             # Normalize to [0, 1]
             s_norm = s / s.max()
             group_svs[group].append(s_norm.cpu().numpy())
             print(f"  {name:50s} {str(list(param.shape)):20s} -> {group} "
-                  f"({len(s)} SVs)")
+                  f"({len(s)} SVs, frob={frob:.2f})")
 
     del model
     import gc; gc.collect()
@@ -174,11 +178,20 @@ def cmd_extract():
         print(f"  {group}: {len(sv_list)} matrices, avg {max_len} SVs, "
               f"coeffs={[f'{c:.3f}' for c in coeffs]}")
 
+    # Compute mean Frobenius norm per group
+    mean_frobs = {}
+    for group, frobs in group_frobs.items():
+        if frobs:
+            mean_frobs[group] = sum(frobs) / len(frobs)
+            print(f"  {group}: mean Frobenius norm = {mean_frobs[group]:.4f} "
+                  f"({len(frobs)} matrices)")
+
     # Save
     os.makedirs("imt_gpt/results", exist_ok=True)
     result = {
         "method": "pretrained_extraction",
         "spectra_coeffs": spectra_coeffs,
+        "group_frob_norms": mean_frobs,
         "lam": 1.0,
         "description": "Spectra extracted from pretrained GPT-2 weights",
     }

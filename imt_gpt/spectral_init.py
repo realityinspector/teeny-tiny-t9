@@ -35,18 +35,21 @@ def dct_expand(coeffs: np.ndarray, n: int) -> np.ndarray:
 
 
 def spectral_init_weight(W: torch.Tensor, target_spectrum: np.ndarray,
-                         lam: float = 1.0) -> torch.Tensor:
+                         lam: float = 1.0,
+                         target_frob: Optional[float] = None) -> torch.Tensor:
     """Replace singular values of W with shaped distribution.
 
-    Preserves U, V directions (random). Preserves Frobenius norm.
+    Preserves U, V directions (random). Preserves Frobenius norm
+    (or matches target_frob if provided).
 
     Args:
         W: weight matrix (any shape, treated as 2D)
         target_spectrum: normalized spectrum values in [0, 1]
         lam: blending strength. 0=flat (Xavier-like), 1=full shape
+        target_frob: if set, scale to this Frobenius norm instead of W's
 
     Returns:
-        Reshaped weight matrix with same Frobenius norm
+        Reshaped weight matrix
     """
     orig_shape = W.shape
     # Handle > 2D tensors by reshaping
@@ -56,7 +59,7 @@ def spectral_init_weight(W: torch.Tensor, target_spectrum: np.ndarray,
         W_2d = W
 
     U, s, Vt = torch.linalg.svd(W_2d, full_matrices=False)
-    frob = torch.norm(W_2d, 'fro')
+    frob = target_frob if target_frob is not None else torch.norm(W_2d, 'fro').item()
     n = len(s)
 
     # Interpolate target spectrum to match matrix rank
@@ -73,8 +76,8 @@ def spectral_init_weight(W: torch.Tensor, target_spectrum: np.ndarray,
     blended = flat + lam * (shaped - flat)
     blended = torch.clamp(blended, min=0.01)
 
-    # Norm-match to preserve Frobenius norm
-    s_new = blended * (frob / torch.norm(blended))
+    # Norm-match to target Frobenius norm
+    s_new = blended * (frob / torch.norm(blended).item())
 
     W_new = U @ torch.diag(s_new) @ Vt
     return W_new.reshape(orig_shape)
@@ -145,7 +148,8 @@ def decode_search_vector(genome: np.ndarray, n_dct: int = 8) -> Dict:
 
 
 def apply_spectral_init(model, spectra_coeffs: Dict[str, np.ndarray],
-                        lam: float = 1.0, verbose: bool = False):
+                        lam: float = 1.0, verbose: bool = False,
+                        group_frob_norms: Optional[Dict[str, float]] = None):
     """Apply spectral initialization to all eligible weight matrices in a model.
 
     Args:
@@ -153,6 +157,8 @@ def apply_spectral_init(model, spectra_coeffs: Dict[str, np.ndarray],
         spectra_coeffs: dict of group_name -> DCT coefficients
         lam: global blending strength
         verbose: print per-layer info
+        group_frob_norms: if set, per-group target Frobenius norms
+            (overrides the default of preserving each matrix's own norm)
     """
     n_shaped = 0
     n_skipped = 0
@@ -180,7 +186,9 @@ def apply_spectral_init(model, spectra_coeffs: Dict[str, np.ndarray],
                 n_sv = min(param.shape)
 
             target_spectrum = dct_expand(coeffs, n_sv)
-            param.data = spectral_init_weight(param.data, target_spectrum, lam=lam)
+            tf = group_frob_norms.get(group) if group_frob_norms else None
+            param.data = spectral_init_weight(param.data, target_spectrum,
+                                              lam=lam, target_frob=tf)
             n_shaped += 1
 
             if verbose:

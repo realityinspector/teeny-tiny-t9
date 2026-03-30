@@ -61,6 +61,26 @@ def init_imt_flat(model, lam=1.0):
     apply_spectral_init(model, spectra, lam=lam)
 
 
+def init_imt_scaled_flat(model, group_frob_norms, lam=1.0):
+    """Flat spectrum scaled to pretrained GPT-2 Frobenius norms per group.
+
+    Isolates spectral SHAPE from per-group SCALE:
+    - Same flat SVs as imt_flat
+    - But Frobenius norm matches the pretrained model, not the random init
+    """
+    n_dct = 8
+    flat_coeffs = np.zeros(n_dct)
+    flat_coeffs[0] = 1.0
+
+    spectra = {
+        ATTN_PROJ: flat_coeffs,
+        FFN_UP: flat_coeffs,
+        FFN_DOWN: flat_coeffs,
+        EMBED: flat_coeffs,
+    }
+    apply_spectral_init(model, spectra, lam=lam, group_frob_norms=group_frob_norms)
+
+
 def init_imt_shaped(model, spectra_coeffs, lam=1.0):
     """IMT shaped spectrum from CMA-ES search or manual design."""
     apply_spectral_init(model, spectra_coeffs, lam=lam)
@@ -81,6 +101,10 @@ def make_init_fn(method: str, **kwargs):
         spectra = kwargs["spectra_coeffs"]
         lam = kwargs.get("lam", 1.0)
         return lambda model: init_imt_shaped(model, spectra, lam=lam)
+    elif method == "imt_scaled_flat":
+        norms = kwargs["group_frob_norms"]
+        lam = kwargs.get("lam", 1.0)
+        return lambda model: init_imt_scaled_flat(model, norms, lam=lam)
     else:
         raise ValueError(f"Unknown init method: {method}")
 

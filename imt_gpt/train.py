@@ -9,6 +9,8 @@ Tuned for M1 MacBook Pro 16GB.
 import gc
 import time
 import math
+import random
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from transformers import GPT2LMHeadModel, GPT2Config, GPT2TokenizerFast
@@ -104,7 +106,7 @@ def evaluate_perplexity(model, eval_dataloader, device, max_batches=20):
     return math.exp(min(avg_loss, 20))  # cap at exp(20) to avoid overflow
 
 
-def _make_early_result(init_name, losses, checkpoints, model,
+def _make_early_result(init_name, losses, grad_norms, checkpoints, model,
                        val_dataloader, device, n_params, start_time, reason):
     """Build result dict for early stopping, with cleanup."""
     _clear_memory(device)
@@ -118,6 +120,7 @@ def _make_early_result(init_name, losses, checkpoints, model,
     return {
         "init_name": init_name,
         "losses": losses,
+        "grad_norms": grad_norms,
         "checkpoints": checkpoints,
         "final_ppl": final_ppl,
         "elapsed": elapsed,
@@ -143,6 +146,14 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
     """
     device = config.device or get_device()
     grad_accum = config.grad_accum_steps
+
+    # Seed for reproducibility
+    if config.seed is not None:
+        torch.manual_seed(config.seed)
+        np.random.seed(config.seed)
+        random.seed(config.seed)
+        if device == "cuda":
+            torch.cuda.manual_seed_all(config.seed)
 
     # Install safety infrastructure
     set_process_memory_limit(max_gb=12.0)
@@ -170,12 +181,16 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
         print("Loading WikiText-2...")
     dataset = load_data(config, tokenizer)
 
+    train_gen = None
+    if config.seed is not None:
+        train_gen = torch.Generator().manual_seed(config.seed)
     train_dataloader = DataLoader(
         dataset["train"],
         batch_size=config.batch_size,
         shuffle=True,
         drop_last=True,
         num_workers=0,  # SAFE: in-process, no fork memory doubling
+        generator=train_gen,
     )
     val_dataloader = DataLoader(
         dataset["validation"],
@@ -212,6 +227,7 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
 
     # Training loop with gradient accumulation
     losses = []
+    grad_norms = []
     checkpoints = {}
     optimizer_step = 0  # counts actual optimizer steps
     micro_step = 0      # counts forward passes
@@ -232,7 +248,7 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
                     if verbose:
                         print(f"\n  Clean shutdown at step {optimizer_step}")
                     return _make_early_result(
-                        init_name, losses, checkpoints, model,
+                        init_name, losses, grad_norms, checkpoints, model,
                         val_dataloader, device, n_params, start_time,
                         "user_interrupt")
 
@@ -255,7 +271,8 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
                     for pg in optimizer.param_groups:
                         pg["lr"] = lr
 
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
+                    gnorm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
+                    grad_norms.append(float(gnorm))
                     optimizer.step()
                     optimizer.zero_grad()
 
@@ -267,7 +284,8 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
                         elapsed = time.time() - start_time
                         ppl = math.exp(min(avg_loss, 20))
                         print(f"  step {optimizer_step:5d} | loss {avg_loss:.4f} | "
-                              f"ppl {ppl:.1f} | lr {lr:.2e} | {elapsed:.0f}s")
+                              f"ppl {ppl:.1f} | gnorm {float(gnorm):.2f} | "
+                              f"lr {lr:.2e} | {elapsed:.0f}s")
 
                     # Checkpoints
                     if return_checkpoints and (optimizer_step + 1) in config.eval_steps:
@@ -288,7 +306,7 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
                             print(f"\n  MEMORY ABORT at step {optimizer_step}: "
                                   f"{detail}")
                             return _make_early_result(
-                                init_name, losses, checkpoints, model,
+                                init_name, losses, grad_norms, checkpoints, model,
                                 val_dataloader, device, n_params, start_time,
                                 f"memory_pressure:{detail}")
 
@@ -309,6 +327,7 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
         return {
             "init_name": init_name,
             "losses": losses,
+            "grad_norms": grad_norms,
             "checkpoints": checkpoints,
             "final_ppl": float("inf"),
             "elapsed": time.time() - start_time,
@@ -332,6 +351,7 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
     return {
         "init_name": init_name,
         "losses": losses,
+        "grad_norms": grad_norms,
         "checkpoints": checkpoints,
         "final_ppl": final_ppl,
         "elapsed": elapsed,

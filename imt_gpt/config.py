@@ -39,6 +39,9 @@ class TrainConfig:
     # Device
     device: Optional[str] = None  # auto-detect
 
+    # Reproducibility
+    seed: Optional[int] = None  # set for reproducible runs
+
     # Memory safety
     max_memory_gb: float = 10.0  # abort if PyTorch uses more than this
     memory_check_interval: int = 25  # check every N optimizer steps

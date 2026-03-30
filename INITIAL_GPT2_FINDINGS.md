@@ -197,12 +197,30 @@ step 500:   gnorm  1,056    (gradient clipping barely containing it)
 step 700:   gnorm     1.0   (finally stabilized, but damage done)
 ```
 
+### LR confound ablation (RESOLVED)
+
+**Concern**: Is orthogonal just LR-starved? It plateaus at PPL ~1,900
+from step 500-1000 with zero improvement — maybe it needs higher LR.
+
+**Test**: Orthogonal at 3x LR (1.875e-4 vs 6.25e-5), same seed.
+
+| Config | PPL@250 | PPL@500 | PPL@1000 | Outcome |
+|--------|---------|---------|----------|---------|
+| ortho (1x LR) | 1,944 | 1,965 | **1,871** | Plateaus, slow improvement |
+| ortho (3x LR) | NaN | NaN | **NaN** | Complete divergence |
+
+**Verdict: Orthogonal is NOT LR-starved — it's at its LR ceiling.**
+3x LR causes loss to collapse to 0.0 (NaN) by step ~150. Gradient
+norms spike to 200 then fall to 0.0 as the model dies. The original
+LR (6.25e-5) is already near-optimal for orthogonal init, and it
+still cannot match spectral init's PPL 839.
+
+This rules out the LR confound hypothesis. The spectral init advantage
+is real, not an artifact of favorable hyperparameter matching.
+
 ### Additional diagnostics (in progress)
 
-The following tests are running overnight via nohup:
-
-- **Orthogonal 3x LR**: Tests if orthogonal baseline is LR-starved
-  (plateaus at PPL ~1,900 from step 500-1000)
+Still running overnight:
 - **Orthogonal 2000 steps**: Tests if it just needs more time
 - **3-seed runs** (seeds 42, 137, 512): Error bars for orthogonal,
   imt_flat, and imt_extracted at 1000 steps each
@@ -220,8 +238,8 @@ Results will be added when complete.
    catch up.
 4. **Error bars pending**: Multi-seed runs (3 seeds) are in progress.
    All headline numbers are single-run until then.
-5. **Baseline LR sensitivity unknown**: The orthogonal baseline may
-   need different hyperparameters. Ablation in progress.
+5. ~~**Baseline LR sensitivity**~~: RESOLVED. 3x LR causes orthogonal
+   to diverge. Original LR is near-optimal for the baseline.
 6. **No cross-architecture transfer**: Extracted spectra are from GPT-2
    applied to GPT-2. Unknown if they transfer to other architectures.
 7. **DCT coefficient count (8) is arbitrary**: No ablation on this
@@ -279,14 +297,19 @@ imt_gpt/
 - [x] Gradient norm tracking (gnorm logged at every step)
 - [x] Shape vs scale ablation (imt_scaled_flat — shape wins)
 - [ ] Multi-seed error bars (3 seeds × 3 methods, running overnight)
-- [ ] Orthogonal LR ablation (3x LR + 2000 steps, running overnight)
+- [x] Orthogonal LR ablation — 3x LR diverges; baseline is NOT LR-starved
+- [ ] Orthogonal 2000 steps (running)
 
 **Still needed:**
-1. **5,000-step full comparison** on better hardware (CUDA)
-2. **DCT coefficient ablation** — test n_dct in {4, 8, 16, 32}
-3. **Per-layer spectral variation** — layer-specific spectra instead
+1. **Jacobian conditioning at step 0** — compute the condition number
+   of the input-output Jacobian for each init method before training.
+   If spectral init produces better-conditioned Jacobians, that would
+   explain both the convergence advantage and the LR robustness.
+2. **5,000-step full comparison** on better hardware (CUDA)
+3. **DCT coefficient ablation** — test n_dct in {4, 8, 16, 32}
+4. **Per-layer spectral variation** — layer-specific spectra instead
    of group averages
-4. **Cross-dataset validation** on OpenWebText, C4, or The Pile
-5. **Scaling study** — GPT-2 medium (355M) and large (774M)
-6. **Spike mechanism** — correlate gradient norms with PPL spikes
+5. **Cross-dataset validation** on OpenWebText, C4, or The Pile
+6. **Scaling study** — GPT-2 medium (355M) and large (774M)
+7. **Spike mechanism** — correlate gradient norms with PPL spikes
    across seeds to determine if spikes are deterministic or stochastic

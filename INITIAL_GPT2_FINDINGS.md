@@ -1,6 +1,7 @@
 # Initial GPT-2 Findings: Spectral Initialization via Pretrained Extraction
 
 **Date**: 2026-03-30
+**Status**: Preliminary single-run results. Multi-seed error bars in progress.
 **Model**: GPT-2 small (124M parameters, 12 layers, 768 hidden, 12 heads)
 **Dataset**: WikiText-2 (raw)
 **Hardware**: Apple M1 MacBook Pro 16GB (MPS backend)
@@ -26,6 +27,12 @@ Sequence len:   256 tokens
 Gradient clip:  1.0
 Device:         MPS (Apple Silicon M1)
 ```
+
+**Note on LR choice**: 6.25e-5 is low for GPT-2 pretraining (typical:
+2.5e-4 to 6e-4). This was inherited from the fine-tuning default. A 3x LR
+ablation (1.875e-4) shows orthogonal init diverges at higher LR, so
+the baseline isn't LR-starved — but future runs should sweep LR to ensure
+the spectral advantage isn't LR-sensitivity in disguise.
 
 ### What's Novel
 
@@ -85,7 +92,7 @@ final PPL because the IMT methods haven't recovered yet.
 
 | Step | imt_extracted | orthogonal | Ratio |
 |------|---------------|------------|-------|
-| 100 | 2,675 | 45,443 | **17x better** |
+| 100 | 2,675 | 45,443 | 17x (noise-dominated) |
 | 250 | 4,608* | 1,998 | 0.4x (spike) |
 | 500 | **970** | 1,938 | **2.0x better** |
 | 750 | **859** | 1,911 | **2.2x better** |
@@ -135,17 +142,17 @@ improvement" phenomenon observed in large-scale training runs.
 ### 4. AdamW does NOT erase initialization effects
 
 A key concern was that AdamW's per-parameter adaptive learning rates would
-quickly wash out any init effects. This is definitively false: the 2.3x
-advantage persists through 1,000 optimizer steps and the gap is still
-widening at termination. The spectral structure provides lasting guidance
-that the optimizer exploits rather than overrides.
+quickly wash out any init effects. At 1,000 steps the 2.3x advantage
+persists and the gap is still widening — but 1k steps is early training.
+Whether this holds at convergence (5k-50k steps) is unknown and needs
+validation on better hardware.
 
 ### 5. Pretrained extraction > evolutionary search
 
-Extracting spectra from a known-good pretrained model is more principled
-and cheaper than CMA-ES search. It took seconds to extract vs. hours for
-search, and produces a biologically meaningful spectrum (the actual
-task-relevant singular value distribution).
+Extracting spectra from a known-good pretrained model is cheaper than
+CMA-ES search. It took seconds to extract vs. hours for search, and
+produces a spectrum that reflects actual trained weight structure rather
+than a search artifact.
 
 ## Extracted Spectral Shape
 
@@ -159,8 +166,9 @@ all matrix types:
 - **Embeddings**: Most anisotropic — first SV dominates heavily,
   reflecting the peaked word frequency distribution.
 
-This is the "language Laplacian" — the spectral fingerprint of the
-language modeling task as encoded in the trained weight matrices.
+These spectral signatures may encode task structure — the relative
+importance of different subspaces for language modeling — but this
+remains a hypothesis until validated on other datasets and scales.
 
 ## Diagnostic Results: Addressing Reviewer Critique
 
@@ -227,6 +235,15 @@ Still running overnight:
 
 Results will be added when complete.
 
+### Open mechanism question
+
+Is the shaped spectrum injecting "task structure," or simply producing
+better-conditioned Jacobians at step 0? A well-conditioned Jacobian would
+explain both the faster convergence and the LR robustness (the model can
+tolerate a wider range of LRs without exploding). Computing the condition
+number of the input-output Jacobian for each init method is a priority
+next step (see Next Steps).
+
 ## Limitations
 
 1. **Single dataset**: Only WikiText-2 tested. Needs validation on
@@ -246,6 +263,9 @@ Results will be added when complete.
    choice yet.
 8. **Memory-constrained hardware**: M1 16GB with MPS; some runs
    truncated by system memory pressure from concurrent applications.
+9. **Toy-scale regime**: Effective batch 8, seq_len 256 on MPS. Effects
+   this large in toy settings frequently shrink at real scale. MPS
+   numerical quirks add noise vs CUDA.
 
 ## Reproduction
 

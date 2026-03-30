@@ -78,9 +78,11 @@ print(f"Saved {{path}}: PPL={{result['final_ppl']:.2f}}", flush=True)
     print(f"{'='*60}", flush=True)
 
     t0 = time.time()
+    # 2k-step runs need more time (~90 min on MPS)
+    timeout = 14400 if steps > 1000 else 7200
     result = subprocess.run(
         [PYTHON, "-c", script],
-        capture_output=False, text=True, timeout=7200,
+        capture_output=False, text=True, timeout=timeout,
     )
     elapsed = time.time() - t0
     print(f"  [{name}] exit={result.returncode} wall={elapsed:.0f}s", flush=True)
@@ -146,8 +148,22 @@ def main():
         print(f"  {t[0]}: {t[1]} steps={t[2]} lr={t[3]} seed={t[5]}", flush=True)
 
     # Run sequentially (memory safety — one model at a time)
+    # Skip tests that already have results on disk
     completed = 0
+    skipped = 0
     for name, method, steps, lr, warmup, seed, kwargs in tests:
+        result_path = os.path.join(PROJECT_ROOT, f"imt_gpt/results/diag_{name}.json")
+        if os.path.exists(result_path):
+            try:
+                with open(result_path) as f:
+                    existing = json.load(f)
+                ppl = existing.get("final_ppl", "?")
+                print(f"  [{name}] SKIP — already done (PPL={ppl})", flush=True)
+                skipped += 1
+                completed += 1
+                continue
+            except (json.JSONDecodeError, KeyError):
+                pass  # Corrupted file, re-run
         try:
             rc = run_single(name, method, steps, lr, warmup, seed, kwargs)
             if rc == 0:

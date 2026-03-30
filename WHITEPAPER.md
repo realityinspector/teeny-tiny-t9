@@ -11,8 +11,9 @@ tested techniques across data encoding, compression algorithm selection,
 pre-compression transforms, and code golf. The final file is 0.36% above
 the architecture floor -- the theoretical minimum given Python's stdlib
 compression and encoding tools. The most novel finding is that reversing
-English words before delta encoding exploits suffix morphology for a 30-byte
-compression improvement that no standard compressor discovers on its own.
+English words before delta encoding exploits suffix morphology for a 32-byte
+net improvement (30 bytes of bz2 savings amplified to 37 b85 characters,
+minus 5 bytes of decoder cost) that no standard compressor discovers on its own.
 
 ## 1. Problem Statement
 
@@ -89,7 +90,7 @@ expression unfold that builds the word list in one list comprehension.
 The previous value of `p` persists across iterations via the walrus
 assignment in the enclosing function scope.
 
-### Phase 3: The reversed delta discovery (saved 30 bytes on blob)
+### Phase 3: The reversed delta discovery (saved 32 bytes net)
 
 The single most surprising finding. English words share more *suffixes*
 than *prefixes*:
@@ -104,8 +105,9 @@ than *prefixes*:
 ```
 
 By reversing each word before sorting and delta-encoding, we convert
-suffix overlap into prefix overlap. The reversal costs 5 bytes in the
-decoder (`[::-1]`) but saves 37 bytes on the compressed blob. Net: -32.
+suffix overlap into prefix overlap. The reversal saves 30 bytes of bz2
+output (868 -> 838), which translates to 37 fewer b85 characters in the
+source file. The decoder pays 5 bytes for `[::-1]`. Net: -32.
 
 This is a genuine information-theoretic win: bz2 sees the suffix structure
 as prefix structure, which its BWT captures more efficiently.

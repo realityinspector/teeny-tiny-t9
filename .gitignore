@@ -2,3 +2,9 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+.venv/
+*.egg-info/
+nohup.out
+imt_gpt/results/run_*.log
+imt_gpt/results/.1k_done
+imt_gpt/results/.*_done

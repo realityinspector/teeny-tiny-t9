@@ -273,7 +273,20 @@ def train(config: TrainConfig, init_fn=None, init_name="default",
 
                     gnorm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
                     grad_norms.append(float(gnorm))
-                    optimizer.step()
+
+                    # Spike-skip: discard steps where pre-clip gnorm far exceeds the running median
+                    skip_step = False
+                    if config.spike_skip_mult > 0 and len(grad_norms) > 20:
+                        recent = sorted(grad_norms[-50:])
+                        median = recent[len(recent) // 2]
+                        if float(gnorm) > config.spike_skip_mult * median:
+                            skip_step = True
+                            if verbose:
+                                print(f"  step {optimizer_step:5d} | SPIKE SKIP gnorm={float(gnorm):.1f} "
+                                      f"(threshold={config.spike_skip_mult * median:.1f})")
+
+                    if not skip_step:
+                        optimizer.step()
                     optimizer.zero_grad()
 
                     avg_loss = accum_loss / grad_accum

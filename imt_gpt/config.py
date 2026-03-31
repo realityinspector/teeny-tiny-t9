@@ -29,6 +29,7 @@ class TrainConfig:
     warmup_steps: int = 500
     weight_decay: float = 0.01
     grad_clip: float = 1.0
+    spike_skip_mult: float = 0.0  # 0=disabled; if >0, skip optimizer steps where gnorm > spike_skip_mult * running_median
     betas: tuple = (0.9, 0.999)
 
     # Logging

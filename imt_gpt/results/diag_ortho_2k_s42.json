@@ -1,0 +1,10 @@
+{
+  "init_name": "ortho_2k_s42",
+  "final_ppl": -1,
+  "note": "SKIPPED - thermal throttling caused 2.7x slowdown, result not critical (ortho plateaus at 1871 by step 1000)",
+  "elapsed": 0,
+  "checkpoints": {},
+  "seed": 42,
+  "lr": 6.25e-05,
+  "steps": 2000
+}

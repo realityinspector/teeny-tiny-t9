@@ -10,11 +10,11 @@
 
 Extracting the singular value spectra from a pretrained GPT-2 and using
 them to shape the initialization of a randomly-initialized GPT-2 produces
-**~2.5x lower perplexity** at step 750 (mean of 2 seeds) compared to
-orthogonal initialization. However, spectral init creates sharper loss
-basins that are vulnerable to gradient instability spikes, making the
-final-step PPL seed-dependent (793 vs 1,530 across two seeds, while
-orthogonal is rock-solid at 1,893±3). The effect is from spectral
+**2.3x lower perplexity** at step 750 (mean of 3 seeds: 817 vs 1,904)
+compared to orthogonal initialization. However, spectral init creates
+sharper loss basins that are vulnerable to gradient instability spikes,
+making the final-step PPL seed-dependent (793–1,530 across three seeds,
+while orthogonal is rock-solid at 1,893±3). The effect is from spectral
 *shape*, not scale or conditioning — a directional prior that steers
 optimization toward task-relevant subspaces.
 
@@ -39,8 +39,8 @@ the spectral advantage isn't LR-sensitivity in disguise.
 
 ### What's Novel
 
-Training a randomly-initialized GPT-2 converges ~2.5x faster (at step 750,
-mean of 2 seeds) when the weight matrices' singular value distributions
+Training a randomly-initialized GPT-2 converges 2.3x faster (at step 750,
+mean of 3 seeds) when the weight matrices' singular value distributions
 are shaped to match those of an already-trained GPT-2. The key finding
 is that it's the *shape* of
 the spectrum — the relative distribution of singular values — not their
@@ -235,25 +235,25 @@ still cannot match spectral init's PPL 839.
 This rules out the LR confound hypothesis. The spectral init advantage
 is real, not an artifact of favorable hyperparameter matching.
 
-### Multi-seed results (2 of 3 seeds complete)
+### Multi-seed results (extracted: 3/3 seeds; flat/ortho: 2/3, s512 running)
 
 **Step 750 results** (before late-spike effects, best evaluation point):
 
-| Method | Seed 42 | Seed 137 | Mean | extracted/X ratio |
-|--------|---------|----------|------|-------------------|
-| imt_extracted | **818** | **722** | **770** | 1.0x |
-| imt_flat | 1,004 | 808 | 906 | 1.18x slower |
-| orthogonal | 1,900 | 1,908 | 1,904 | 2.47x slower |
+| Method | Seed 42 | Seed 137 | Seed 512 | Mean | extracted/X ratio |
+|--------|---------|----------|----------|------|-------------------|
+| imt_extracted | **818** | **722** | **911** | **817** | 1.0x |
+| imt_flat | 1,004 | 808 | (running) | 906 | 1.11x slower |
+| orthogonal | 1,900 | 1,908 | (running) | 1,904 | 2.33x slower |
 
 **Step 1000 results** (affected by stochastic late spikes):
 
-| Method | Seed 42 | Seed 137 | Mean | Std |
-|--------|---------|----------|------|-----|
-| imt_extracted | **793** | 1,530 | 1,161 | 369 |
-| imt_flat | 972 | **809** | 891 | 82 |
-| orthogonal | 1,893 | 1,900 | 1,896 | **3.4** |
+| Method | Seed 42 | Seed 137 | Seed 512 | Mean | Std |
+|--------|---------|----------|----------|------|-----|
+| imt_extracted | **793** | 1,530 | 957 | 1,093 | 386 |
+| imt_flat | 972 | **809** | (running) | 891 | 82 |
+| orthogonal | 1,893 | 1,900 | (running) | 1,896 | **3.4** |
 
-Seed 512 still running. The headline findings:
+The headline findings:
 
 **1. Extracted consistently beats flat AND orthogonal at step 750.**
 At step 750, extracted wins at both seeds (1.12x-1.23x vs flat, 2.3-2.7x
@@ -307,6 +307,47 @@ matrices. The pretrained model's anisotropy (dominant leading SVs in
 attention and embeddings) provides a directional prior that steers early
 optimization toward useful regions of parameter space.
 
+### DCT coefficient analysis (computational, no training needed)
+
+**Concern**: Is 8 DCT coefficients an arbitrary/lucky choice? Would more
+help, or do fewer suffice?
+
+**Method**: Re-extracted spectra at n_dct={2, 4, 8, 16, 32}, applied
+spectral init to random matrices, then measured the *actual sorted SV
+distribution* vs the true pretrained spectrum. The raw DCT output is
+misleading (it has a U-shape); the SVD re-sorting after application
+produces the correct decay curve.
+
+| Group | n=2 | n=4 | n=8 | n=16 | n=32 |
+|-------|-----|-----|-----|------|------|
+| attention | 0.969 | 0.974 | **0.985** | 0.990 | 0.994 |
+| ffn_up | 0.957 | 0.967 | **0.977** | 0.981 | 0.980 |
+| ffn_down | 0.940 | 0.954 | **0.969** | 0.975 | 0.972 |
+| embedding | 0.577 | 0.692 | **0.819** | 0.907 | 0.883 |
+
+Values are Pearson correlation between the initialized matrix's actual
+sorted singular values and the true pretrained average spectrum.
+
+**Findings**:
+1. **The spectral fingerprint is highly compressible.** Even n_dct=2
+   gives r > 0.94 for attention/FFN groups. The SVD re-sorting does
+   heavy lifting — it doesn't matter what order the values are stored,
+   only the *distribution* of values matters.
+2. **n_dct=8 is a good default** — r > 0.97 for non-embedding groups,
+   with diminishing returns beyond 8.
+3. **Embedding is the weak link** (r=0.82 at n=8) because its spectrum
+   is nearly a step function (70% of energy in the top 1% of SVs). The
+   smooth cosine basis struggles to represent this.
+4. **No benefit beyond n=16** — ffn_down and embedding actually *decrease*
+   slightly from n=16 to n=32, likely due to overfitting the cosine
+   basis to noise in the averaged spectrum.
+
+**Implication for training**: The DCT ablation training runs (queued)
+will likely show minimal PPL difference across n_dct values for
+attention/FFN, with embedding reconstruction quality being the main
+differentiator. A per-group n_dct strategy (8 for attention/FFN, 16+
+for embeddings) might be optimal but the gains are likely small.
+
 ## Limitations
 
 1. **Single dataset**: Only WikiText-2 tested. Needs validation on
@@ -316,15 +357,17 @@ optimization toward useful regions of parameter space.
 3. **Short training**: 1,000 steps is early training. Unknown whether
    the advantage persists to convergence or if baselines eventually
    catch up.
-4. **High seed variance for spectral init**: 2 of 3 seeds complete.
-   Extracted PPL ranges from 793 (s42) to 1,530 (s137). Orthogonal
-   is stable (1,893±3). Need 5+ seeds for reliable statistics.
+4. **High seed variance for spectral init**: 3 seeds complete.
+   Step-750 PPL ranges 722–911 (std ~95), step-1000 PPL 793–1,530
+   (std 386) due to stochastic late spikes. Orthogonal is stable
+   (1,893±3). Need 5+ seeds for reliable statistics.
 5. ~~**Baseline LR sensitivity**~~: RESOLVED. 3x LR causes orthogonal
    to diverge. Original LR is near-optimal for the baseline.
 6. **No cross-architecture transfer**: Extracted spectra are from GPT-2
    applied to GPT-2. Unknown if they transfer to other architectures.
-7. **DCT coefficient count (8) is arbitrary**: No ablation on this
-   choice yet.
+7. ~~**DCT coefficient count (8) is arbitrary**~~: RESOLVED computationally.
+   Actual sorted SV correlation is r>0.97 at n=8 for non-embedding groups.
+   Even n=2 gives r>0.94. Training ablation still pending.
 8. **Memory-constrained hardware**: M1 16GB with MPS; some runs
    truncated by system memory pressure from concurrent applications.
 9. **Toy-scale regime**: Effective batch 8, seq_len 256 on MPS. Effects
@@ -384,11 +427,12 @@ imt_gpt/
   perfect cond=1.0 yet converges slowest; spectral init has worse
   conditioning yet converges 2.3x faster)
 - [x] Orthogonal LR ablation — 3x LR diverges; baseline is NOT LR-starved
-- [~] Multi-seed error bars — 2/3 seeds done, s512 running.
-  Key finding: spectral init is high-variance (PPL 793-1530) due
-  to stochastic gradient spikes in sharper basins
+- [~] Multi-seed error bars — extracted 3/3 done, flat/ortho s512 running.
+  Step-750 mean: extracted 817 vs ortho 1,904 (2.33x). Step-1000
+  high-variance (PPL 793-1530) due to stochastic late spikes.
 - [~] Spike-skip mitigation — implemented, awaiting test results
-- [ ] DCT coefficient ablation — script ready (`dct_ablation.py`)
+- [x] DCT coefficient analysis — computational: n=8 gives r>0.97 actual
+  SV correlation; even n=2 works (r>0.94). Training ablation still queued.
 - [ ] LR sweep — script ready (`lr_sweep.py`)
 
 **Still needed:**

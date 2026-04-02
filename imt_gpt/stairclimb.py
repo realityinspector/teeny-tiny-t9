@@ -74,6 +74,27 @@ def run_experiment(name, script_body, timeout=10800):
 
 def make_script(name, init_code, config_overrides=""):
     """Generate a training script with custom init and config."""
+    # Build config kwargs, letting overrides replace defaults
+    defaults = {
+        "max_steps": 1000,
+        "eval_steps": [250, 500, 750, 1000],
+        "warmup_steps": 100,
+        "log_every": 100,
+        "lr": 6.25e-5,
+        "seed": 42,
+    }
+    # Parse overrides like "warmup_steps=200, lr=1.25e-4,"
+    if config_overrides.strip():
+        for part in config_overrides.split(","):
+            part = part.strip()
+            if "=" in part:
+                key, val = part.split("=", 1)
+                key = key.strip()
+                try:
+                    defaults[key] = eval(val.strip())
+                except Exception:
+                    defaults[key] = val.strip()
+    config_lines = ",\n    ".join(f"{k}={repr(v)}" for k, v in defaults.items())
     return f'''
 import json, sys, os, numpy as np, math
 sys.path.insert(0, "{PROJECT_ROOT}")
@@ -91,14 +112,8 @@ with open("imt_gpt/results/extracted_spectra.json") as f:
     extracted = json.load(f)
 
 config = TrainConfig(
-    max_steps=1000,
-    eval_steps=[250, 500, 750, 1000],
-    warmup_steps=100,
-    log_every=100,
-    lr=6.25e-5,
-    seed=42,
+    {config_lines},
     device=device,
-    {config_overrides}
 )
 
 {init_code}

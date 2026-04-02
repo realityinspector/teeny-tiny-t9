@@ -1,0 +1,62 @@
+{
+  "baseline": 818.0,
+  "best": 801.9204632404418,
+  "experiments": [
+    {
+      "name": "spike_skip_10x",
+      "description": "More aggressive spike skip: 10x threshold.",
+      "timestamp": "2026-04-01 14:51:32",
+      "ppl_750": 1047.9294637617147,
+      "ppl_1000": 1010.738086784203,
+      "elapsed": 2841.8477597236633
+    },
+    {
+      "name": "lam_0.5",
+      "description": "Half-strength spectral shape. Less anisotropy = less sharp basin = more stable?",
+      "timestamp": "2026-04-01 15:22:32",
+      "ppl_750": 1356.8323411302244,
+      "ppl_1000": 814.771363592418,
+      "elapsed": 1834.7104818820953
+    },
+    {
+      "name": "lam_2.0",
+      "description": "Double-strength spectral shape. More anisotropy = sharper basin but faster convergence?",
+      "timestamp": "2026-04-01 15:53:30",
+      "ppl_750": 1682.230550274602,
+      "ppl_1000": 6024.951641257668,
+      "elapsed": 1837.7686409950256
+    },
+    {
+      "name": "clip_0.5",
+      "description": "Tighter gradient clipping (0.5 vs 1.0). Gentler updates = less spike damage?",
+      "timestamp": "2026-04-01 16:24:33",
+      "ppl_750": 863.3700312357729,
+      "ppl_1000": 831.888149543858,
+      "elapsed": 1838.4371101856232
+    },
+    {
+      "name": "clip_0.25",
+      "description": "Very tight gradient clipping (0.25). Prevents nearly all spike damage.",
+      "timestamp": "2026-04-01 16:55:45",
+      "ppl_750": 1727.1629199870542,
+      "ppl_1000": 888.9715360129434,
+      "elapsed": 1847.7114629745483
+    },
+    {
+      "name": "no_embed_spectral",
+      "description": "Spectral init for attn/FFN only, orthogonal for embeddings. Embedding reconstruction is worst (r=0.82).",
+      "timestamp": "2026-04-01 17:26:43",
+      "ppl_750": 1368.1043748400268,
+      "ppl_1000": 1373.2896003165324,
+      "elapsed": 1839.42680311203
+    },
+    {
+      "name": "spike_skip_50x_clip_0.5",
+      "description": "Both spike skip AND tighter clip. Belt + suspenders for stability.",
+      "timestamp": "2026-04-01 17:57:40",
+      "ppl_750": 801.9204632404418,
+      "ppl_1000": 775.2206122129227,
+      "elapsed": 1832.6822130680084
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "baseline": 818.0,
-  "best": 801.9204632404418,
+  "best": 788.3088656880763,
   "experiments": [
     {
       "name": "spike_skip_10x",
@@ -65,6 +65,14 @@
       "ppl_750": 1220.8371365626701,
       "ppl_1000": 1140.4865493291416,
       "elapsed": 3169.947159051895
+    },
+    {
+      "name": "hybrid_V_0.5",
+      "description": "Group-avg DCT spectra + 50% pretrained V alignment.",
+      "timestamp": "2026-04-01 22:34:01",
+      "ppl_750": 788.3088656880763,
+      "ppl_1000": 764.7207442053742,
+      "elapsed": 2613.08100605011
     }
   ]
 }

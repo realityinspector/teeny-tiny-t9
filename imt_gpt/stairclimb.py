@@ -278,7 +278,166 @@ init_fn = make_init_fn("imt_shaped", spectra_coeffs=extracted["spectra_coeffs"])
         'spike_skip_mult=50.0, warmup_steps=200,',
     ),
 
-    # --- Extract from GPT-2 medium ---
+    # =============================================================
+    # ROUND 2: Per-layer spectra + directional alignment + noise
+    # =============================================================
+
+    # --- Per-layer spectra (not group-averaged) ---
+    (
+        "per_layer",
+        "Per-layer spectra from pretrained GPT-2 small. Each layer gets its own spectrum instead of group average.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2")
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0)
+''',
+        '',
+    ),
+    (
+        "per_layer_stable",
+        "Per-layer spectra + winning stability config (spike_skip + clip 0.5).",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2")
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+
+    # --- Directional alignment ---
+    (
+        "align_V_0.25",
+        "Per-layer spectra + 25% alignment of right singular vectors with pretrained V.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0, align_mode="V", align_strength=0.25)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "align_V_0.5",
+        "Per-layer spectra + 50% V alignment. Half pretrained directions, half random.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0, align_mode="V", align_strength=0.5)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "align_V_1.0",
+        "Per-layer spectra + full V alignment. Pretrained right singular vectors, fresh left.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0, align_mode="V", align_strength=1.0)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "align_UV_0.5",
+        "Per-layer spectra + 50% alignment of BOTH U and V. Maximum pretrained structure transfer.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0, align_mode="UV", align_strength=0.5)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "align_UV_1.0",
+        "Per-layer spectra + full UV alignment. Essentially loading pretrained weights with random scaling.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0, align_mode="UV", align_strength=1.0)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+
+    # --- Noise ablations (how robust is the signal?) ---
+    (
+        "noise_0.1",
+        "Add N(0,0.1) noise to per-layer spectra. Tests robustness of spectral signal.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2")
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0, noise_std=0.1)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "noise_0.3",
+        "Add N(0,0.3) noise. Heavy corruption — if this still works, the signal is coarse.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2")
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0, noise_std=0.3)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "shuffled_layers",
+        "Per-layer spectra but randomly shuffled across layers. Tests whether layer-specific information matters.",
+        '''
+import random as _rng
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+extracted_layers = extract_per_layer("gpt2")
+
+# Shuffle spectra across layers within each group
+_rng.seed(42)
+by_group = {}
+for name, ext in extracted_layers.items():
+    g = ext["group"]
+    by_group.setdefault(g, []).append(name)
+for g, names in by_group.items():
+    svs_list = [extracted_layers[n]["svs"] for n in names]
+    _rng.shuffle(svs_list)
+    for n, svs in zip(names, svs_list):
+        extracted_layers[n]["svs"] = svs
+
+init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+
+    # --- Medium model extraction ---
+    (
+        "medium_per_layer",
+        "Per-layer spectra from GPT-2 medium (355M), applied to small. Cross-scale transfer.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_per_layer_init_fn
+
+# Extract from medium — layers won't match 1:1 (24 vs 12 layers),
+# so we map by relative depth: medium layer i maps to small layer i//2
+extracted_medium = extract_per_layer("gpt2-medium")
+
+# Build mapping: for each small model param name, find best medium match
+# Medium has 24 layers, small has 12. Map medium layer 2i and 2i+1 -> small layer i
+import re
+mapped = {}
+for name_med, ext in extracted_medium.items():
+    # Try to map to small model name
+    m = re.match("transformer\\.h\\.(\\d+)\\.(.*)", name_med)
+    if m:
+        layer_med = int(m.group(1))
+        rest = m.group(2)
+        layer_small = layer_med // 2
+        name_small = f"transformer.h.{layer_small}.{rest}"
+        # Keep the one from the deeper medium layer (more processed)
+        if name_small not in mapped or layer_med % 2 == 1:
+            mapped[name_small] = ext
+    elif "wte" in name_med or "wpe" in name_med or "ln_f" in name_med:
+        # Non-layer params map directly
+        mapped[name_med] = ext
+
+init_fn = make_per_layer_init_fn(mapped, lam=1.0)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+
+    # --- Extract from GPT-2 medium (group-averaged, original approach) ---
     (
         "medium_spectra",
         "Extract spectra from GPT-2 medium (355M) instead of small (124M). Richer task structure?",

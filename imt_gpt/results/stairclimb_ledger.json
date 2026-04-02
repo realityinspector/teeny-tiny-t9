@@ -1,6 +1,6 @@
 {
   "baseline": 818.0,
-  "best": 730.718053863148,
+  "best": 713.66397655524,
   "experiments": [
     {
       "name": "spike_skip_10x",
@@ -103,6 +103,30 @@
       "ppl_750": 16959.237882845002,
       "ppl_1000": 1.0,
       "elapsed": 1922.0198550224304
+    },
+    {
+      "name": "warmup_50",
+      "description": "Shorter warmup (50 vs 100). Faster to peak LR = exploit spectral head start sooner?",
+      "timestamp": "2026-04-02 08:31:56",
+      "ppl_750": 999.490629828395,
+      "ppl_1000": 951.7029232108789,
+      "elapsed": 1896.0882818698883
+    },
+    {
+      "name": "lr_2x",
+      "description": "Double LR (1.25e-4). We know ortho diverges at 3x, but spectral might handle it.",
+      "timestamp": "2026-04-02 09:03:42",
+      "ppl_750": 713.66397655524,
+      "ppl_1000": 702.0567252303003,
+      "elapsed": 1881.581162929535
+    },
+    {
+      "name": "spike_skip_50x",
+      "description": "Skip optimizer steps where gnorm > 50x running median. Should prevent late spikes that destroyed s137.",
+      "timestamp": "2026-04-02 11:18:47",
+      "ppl_750": 1670.173014919824,
+      "ppl_1000": 860.7941278602138,
+      "elapsed": 8086.67093873024
     }
   ]
 }

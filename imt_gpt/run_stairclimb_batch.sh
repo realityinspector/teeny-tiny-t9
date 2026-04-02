@@ -9,10 +9,18 @@ echo "=== Batch stairclimb starting at $(date) ==="
 
 # Priority order: hybrid alignment sweep, then training knobs, then controls
 PRIORITY=(
+    # Round 2 alignment
     hybrid_V_1.0
     hybrid_UV_0.5
+    # Winner combos (highest priority)
+    lr_2x_UV_stable
+    lr_2x_UV
+    lr_3x
+    lr_3x_UV_stable
+    # Unfolded init
     unfold_seed
     unfold_aligned
+    # Remaining knobs
     warmup_200
     warmup_50
     lr_2x

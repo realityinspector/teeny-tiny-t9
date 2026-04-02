@@ -400,6 +400,47 @@ init_fn = make_hybrid_init_fn(extracted["spectra_coeffs"], dirs, lam=1.0, align_
         'spike_skip_mult=50.0, grad_clip=0.5,',
     ),
 
+    # --- Combine winners: lr_2x + UV alignment + stability ---
+    (
+        "lr_2x_UV_stable",
+        "2x LR + 50% UV alignment + spike_skip + clip_0.5. Combining the two best axes.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_hybrid_init_fn
+dirs = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_hybrid_init_fn(extracted["spectra_coeffs"], dirs, lam=1.0, align_mode="UV", align_strength=0.5)
+''',
+        'lr=1.25e-4, spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "lr_2x_UV",
+        "2x LR + 50% UV alignment, no stability interventions. Raw speed test.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_hybrid_init_fn
+dirs = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_hybrid_init_fn(extracted["spectra_coeffs"], dirs, lam=1.0, align_mode="UV", align_strength=0.5)
+''',
+        'lr=1.25e-4,',
+    ),
+    (
+        "lr_3x",
+        "3x LR (1.875e-4). Orthogonal diverges here. Can spectral init handle it?",
+        '''
+from imt_gpt.baselines import make_init_fn
+init_fn = make_init_fn("imt_shaped", spectra_coeffs=extracted["spectra_coeffs"])
+''',
+        'lr=1.875e-4, spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "lr_3x_UV_stable",
+        "3x LR + UV alignment + stability. Push both axes simultaneously.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_hybrid_init_fn
+dirs = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_hybrid_init_fn(extracted["spectra_coeffs"], dirs, lam=1.0, align_mode="UV", align_strength=0.5)
+''',
+        'lr=1.875e-4, spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+
     # =============================================================
     # ROUND 3: Unfolded spectral init (24 meta-params → 50 spectra)
     # =============================================================

@@ -1,6 +1,6 @@
 {
   "baseline": 818.0,
-  "best": 788.3088656880763,
+  "best": 730.718053863148,
   "experiments": [
     {
       "name": "spike_skip_10x",
@@ -73,6 +73,36 @@
       "ppl_750": 788.3088656880763,
       "ppl_1000": 764.7207442053742,
       "elapsed": 2613.08100605011
+    },
+    {
+      "name": "hybrid_V_0.25",
+      "description": "Group-avg DCT spectra (stable) + 25% pretrained V alignment. Best of both worlds?",
+      "timestamp": "2026-04-02 06:39:48",
+      "ppl_750": 1262.6558391047658,
+      "ppl_1000": 1153.3775258479322,
+      "elapsed": 3327.203334093094
+    },
+    {
+      "name": "hybrid_V_1.0",
+      "description": "Group-avg DCT spectra + full pretrained V alignment.",
+      "timestamp": "2026-04-02 06:41:15",
+      "error": "no result"
+    },
+    {
+      "name": "hybrid_UV_0.5",
+      "description": "Group-avg DCT spectra + 50% pretrained UV alignment. Maximum directional transfer.",
+      "timestamp": "2026-04-02 07:27:22",
+      "ppl_750": 730.718053863148,
+      "ppl_1000": 706.6586659385194,
+      "elapsed": 2705.5913338661194
+    },
+    {
+      "name": "warmup_200",
+      "description": "Longer warmup (200 vs 100). Slower LR ramp = fewer early spikes?",
+      "timestamp": "2026-04-02 07:59:54",
+      "ppl_750": 16959.237882845002,
+      "ppl_1000": 1.0,
+      "elapsed": 1922.0198550224304
     }
   ]
 }

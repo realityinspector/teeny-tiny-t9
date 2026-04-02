@@ -196,3 +196,78 @@ def make_per_layer_init_fn(extracted, lam=1.0, align_mode="none",
             verbose=True,
         )
     return init_fn
+
+
+def make_hybrid_init_fn(spectra_coeffs, extracted_directions, lam=1.0,
+                        align_mode="V", align_strength=0.5):
+    """Factory: group-averaged DCT spectra + pretrained directions.
+
+    Combines the stable spectral shape from DCT coefficients (which works)
+    with directional alignment from per-layer extraction (the new signal).
+    This avoids the instability of per-layer spectra while adding
+    directional information.
+
+    Args:
+        spectra_coeffs: dict of group -> DCT coefficients (from extracted_spectra.json)
+        extracted_directions: output of extract_per_layer(include_directions=True)
+        lam: spectral blending strength
+        align_mode: "V", "U", or "UV"
+        align_strength: 0.0=random, 1.0=fully pretrained directions
+    """
+    from imt_gpt.spectral_init import classify_param, dct_expand
+
+    def init_fn(model):
+        n_shaped = 0
+        with torch.no_grad():
+            for name, param in model.named_parameters():
+                if param.dim() < 2:
+                    continue
+                group = classify_param(name)
+                if group is None or group not in spectra_coeffs:
+                    continue
+
+                # Get group-averaged DCT spectrum (stable)
+                coeffs = spectra_coeffs[group]
+                orig_shape = param.shape
+                W = param.data.float()
+                if W.dim() > 2:
+                    W = W.reshape(W.shape[0], -1)
+
+                U_fresh, s_fresh, Vt_fresh = torch.linalg.svd(W, full_matrices=False)
+                frob = torch.norm(W, 'fro').item()
+                n = len(s_fresh)
+
+                # Expand DCT spectrum
+                target_spectrum = dct_expand(np.array(coeffs), n)
+                target_t = torch.tensor(target_spectrum, dtype=s_fresh.dtype,
+                                        device=s_fresh.device)
+
+                flat = torch.ones_like(s_fresh)
+                shaped = torch.clamp(target_t, min=0.01)
+                blended = flat + lam * (shaped - flat)
+                blended = torch.clamp(blended, min=0.01)
+                s_new = blended * (frob / torch.norm(blended).item())
+
+                # Directional alignment from per-layer extraction
+                U_use = U_fresh
+                Vt_use = Vt_fresh
+
+                if name in extracted_directions and align_strength > 0:
+                    ext = extracted_directions[name]
+                    if "Vt" in ext and "V" in align_mode:
+                        Vt_pre = torch.tensor(ext["Vt"], dtype=W.dtype, device=W.device)
+                        if Vt_pre.shape == Vt_fresh.shape:
+                            Vt_use = _blend_orthogonal(Vt_fresh, Vt_pre, align_strength)
+                    if "U" in ext and "U" in align_mode:
+                        U_pre = torch.tensor(ext["U"], dtype=W.dtype, device=W.device)
+                        if U_pre.shape == U_fresh.shape:
+                            U_use = _blend_orthogonal(U_fresh, U_pre, align_strength)
+
+                W_new = U_use @ torch.diag(s_new) @ Vt_use
+                param.data = W_new.reshape(orig_shape)
+                n_shaped += 1
+
+        print(f"Hybrid init: {n_shaped} matrices shaped "
+              f"(group-avg spectra + {align_mode} align @ {align_strength})")
+
+    return init_fn

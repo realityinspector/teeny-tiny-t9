@@ -57,6 +57,14 @@
       "ppl_750": 801.9204632404418,
       "ppl_1000": 775.2206122129227,
       "elapsed": 1832.6822130680084
+    },
+    {
+      "name": "per_layer_stable",
+      "description": "Per-layer spectra + winning stability config (spike_skip + clip 0.5).",
+      "timestamp": "2026-04-01 21:35:27",
+      "ppl_750": 1220.8371365626701,
+      "ppl_1000": 1140.4865493291416,
+      "elapsed": 3169.947159051895
     }
   ]
 }

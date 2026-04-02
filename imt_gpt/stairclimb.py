@@ -356,6 +356,50 @@ init_fn = make_per_layer_init_fn(extracted_layers, lam=1.0, align_mode="UV", ali
         'spike_skip_mult=50.0, grad_clip=0.5,',
     ),
 
+    # --- Hybrid: group-avg spectra + pretrained directions ---
+    # (Per-layer spectra were too noisy. Use the stable DCT spectra
+    # but add directional information from pretrained U/V.)
+    (
+        "hybrid_V_0.25",
+        "Group-avg DCT spectra (stable) + 25% pretrained V alignment. Best of both worlds?",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_hybrid_init_fn
+dirs = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_hybrid_init_fn(extracted["spectra_coeffs"], dirs, lam=1.0, align_mode="V", align_strength=0.25)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "hybrid_V_0.5",
+        "Group-avg DCT spectra + 50% pretrained V alignment.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_hybrid_init_fn
+dirs = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_hybrid_init_fn(extracted["spectra_coeffs"], dirs, lam=1.0, align_mode="V", align_strength=0.5)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "hybrid_V_1.0",
+        "Group-avg DCT spectra + full pretrained V alignment.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_hybrid_init_fn
+dirs = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_hybrid_init_fn(extracted["spectra_coeffs"], dirs, lam=1.0, align_mode="V", align_strength=1.0)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "hybrid_UV_0.5",
+        "Group-avg DCT spectra + 50% pretrained UV alignment. Maximum directional transfer.",
+        '''
+from imt_gpt.pretrained_extract import extract_per_layer, make_hybrid_init_fn
+dirs = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_hybrid_init_fn(extracted["spectra_coeffs"], dirs, lam=1.0, align_mode="UV", align_strength=0.5)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+
     # --- Noise ablations (how robust is the signal?) ---
     (
         "noise_0.1",

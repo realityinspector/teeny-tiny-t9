@@ -11,6 +11,8 @@ echo "=== Batch stairclimb starting at $(date) ==="
 PRIORITY=(
     hybrid_V_1.0
     hybrid_UV_0.5
+    unfold_seed
+    unfold_aligned
     warmup_200
     warmup_50
     lr_2x

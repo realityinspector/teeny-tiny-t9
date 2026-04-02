@@ -400,6 +400,32 @@ init_fn = make_hybrid_init_fn(extracted["spectra_coeffs"], dirs, lam=1.0, align_
         'spike_skip_mult=50.0, grad_clip=0.5,',
     ),
 
+    # =============================================================
+    # ROUND 3: Unfolded spectral init (24 meta-params → 50 spectra)
+    # =============================================================
+    (
+        "unfold_seed",
+        "24 meta-params fitted to pretrained GPT-2, unfolded into layer-specific spectra. No alignment.",
+        '''
+from imt_gpt.spectral_unfold import seed_from_pretrained, make_unfolded_init_fn
+meta = seed_from_pretrained("gpt2")
+init_fn = make_unfolded_init_fn(meta, lam=1.0)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+    (
+        "unfold_aligned",
+        "24 meta-params + pretrained V directions. The full unfolding: seed → spectra + alignment → weights.",
+        '''
+from imt_gpt.spectral_unfold import seed_from_pretrained, make_unfolded_init_fn
+from imt_gpt.pretrained_extract import extract_per_layer
+meta = seed_from_pretrained("gpt2")
+dirs = extract_per_layer("gpt2", include_directions=True)
+init_fn = make_unfolded_init_fn(meta, pretrained_directions=dirs, lam=1.0)
+''',
+        'spike_skip_mult=50.0, grad_clip=0.5,',
+    ),
+
     # --- Noise ablations (how robust is the signal?) ---
     (
         "noise_0.1",

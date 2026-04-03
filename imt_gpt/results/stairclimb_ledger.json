@@ -1,6 +1,6 @@
 {
   "baseline": 818.0,
-  "best": 592.2155781418753,
+  "best": 571.5309425686285,
   "experiments": [
     {
       "name": "spike_skip_10x",
@@ -191,6 +191,30 @@
       "ppl_750": 592.2155781418753,
       "ppl_1000": 599.3027534936334,
       "elapsed": 1908.3555700778961
+    },
+    {
+      "name": "lr_2x_UV",
+      "description": "2x LR + 50% UV alignment, no stability interventions. Raw speed test.",
+      "timestamp": "2026-04-02 19:12:16",
+      "ppl_750": 571.5309425686285,
+      "ppl_1000": 543.1606840591832,
+      "elapsed": 5328.27539730072
+    },
+    {
+      "name": "lr_3x",
+      "description": "3x LR (1.875e-4). Orthogonal diverges here. Can spectral init handle it?",
+      "timestamp": "2026-04-02 20:07:04",
+      "ppl_750": 734.2960861801027,
+      "ppl_1000": 715.197881196474,
+      "elapsed": 3248.3805890083313
+    },
+    {
+      "name": "lr_3x_UV_stable",
+      "description": "3x LR + UV alignment + stability. Push both axes simultaneously.",
+      "timestamp": "2026-04-02 20:38:23",
+      "ppl_750": 830.2481478349551,
+      "ppl_1000": 798.4058438715427,
+      "elapsed": 1841.3698580265045
     }
   ]
 }

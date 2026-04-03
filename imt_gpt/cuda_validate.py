@@ -138,7 +138,7 @@ def run_small_validation():
 
     device = "cuda" if torch.cuda.is_available() else "mps"
 
-    for seed in [42, 137, 512]:
+    for seed in [42]:  # Start with 1 seed; add 137, 512 after first validation
         # Orthogonal baseline
         config_ortho = TrainConfig(
             max_steps=5000,
@@ -148,8 +148,8 @@ def run_small_validation():
             lr=6.25e-5,
             seed=seed,
             device=device,
-            batch_size=16,
-            grad_accum_steps=4,  # effective batch 64
+            batch_size=4,
+            grad_accum_steps=16,  # effective batch 64
             max_length=1024,
             memory_pressure_threshold=5,
         )
@@ -165,8 +165,8 @@ def run_small_validation():
             lr=1.25e-4,  # 2x LR
             seed=seed,
             device=device,
-            batch_size=16,
-            grad_accum_steps=4,  # effective batch 64
+            batch_size=4,
+            grad_accum_steps=16,  # effective batch 64
             max_length=1024,
             memory_pressure_threshold=5,
         )
@@ -194,8 +194,8 @@ def run_medium_validation():
         log_every=100,
         seed=42,
         device=device,
-        batch_size=8,
-        grad_accum_steps=8,  # effective batch 64
+        batch_size=4,
+        grad_accum_steps=16,  # effective batch 64
         max_length=1024,
         model_name="gpt2-medium",
         memory_pressure_threshold=5,
@@ -284,8 +284,8 @@ def run_long_validation():
         log_every=200,
         seed=42,
         device=device,
-        batch_size=16,
-        grad_accum_steps=4,  # effective batch 64
+        batch_size=4,
+        grad_accum_steps=16,  # effective batch 64
         max_length=1024,
         memory_pressure_threshold=5,
     )
@@ -364,8 +364,16 @@ if __name__ == "__main__":
     elif mode == "--summary":
         print_summary()
     elif mode == "--all":
+        # Run in priority order — small first (cheapest, most important)
+        # then medium, then long. Each saves results incrementally.
+        print("Running all experiments in priority order...")
+        print("Small validation first (2 runs, ~2-4 hrs)")
         run_small_validation()
+        print_summary()
+        print("\nMedium validation (2 runs, ~4-8 hrs)")
         run_medium_validation()
+        print_summary()
+        print("\nLong validation (2 runs, ~4-8 hrs)")
         run_long_validation()
     else:
         print(f"Usage: python cuda_validate.py [--small|--medium|--long|--all|--summary]")

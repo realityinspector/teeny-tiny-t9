@@ -1,4 +1,4 @@
-# Spectral Initialization via Pretrained Extraction (SIPE)
+# PRISM: Prismic Pretraining Acceleration
 ## Vetted Findings — April 3, 2026
 
 *Adjusted against external literature review. Claims are grounded in
@@ -9,13 +9,22 @@ and known limitations are stated upfront.*
 
 ## What This Is
 
-A method for transferring compressed SVD structure from a pretrained
-transformer to a randomly-initialized one, achieving 3.33x faster early
-convergence on GPT-2 small (124M params, WikiText-2, 1,000 steps).
+**PRISM** (Prismic Pretraining Acceleration) is a family of spectral
+transfer techniques for neural network initialization. Like a prism
+decomposes white light into its spectrum, PRISM decomposes pretrained
+weights into their SVD spectrum and refracts that structure into a fresh
+initialization — achieving 3.33x faster early convergence on GPT-2 small
+(124M params, WikiText-2, 1,000 steps).
+
+PRISM includes two core techniques:
+- **Spectral Imprint** — extract and compress the singular value distribution
+  (32 DCT coefficients)
+- **EigenTransfer** — partially align singular vectors with pretrained
+  directions (50% V blend)
 
 The method sits at a specific point on the transfer spectrum:
 - **Random init**: 0 bits of pretrained information → baseline
-- **SIPE**: ~32 DCT coefficients + partial V alignment → 3.33x speedup
+- **PRISM**: ~32 DCT coefficients + partial V alignment → 3.33x speedup
 - **Full warm start**: 124M parameters → fastest, but known plasticity
   issues (Ash & Adams, NeurIPS 2020)
 

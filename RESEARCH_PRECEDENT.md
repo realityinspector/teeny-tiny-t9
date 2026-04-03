@@ -1,14 +1,16 @@
-# Research Precedent: Spectral Initialization via Pretrained Extraction
+# Research Precedent: PRISM (Prismic Pretraining Acceleration)
 
 **Purpose**: Claims below are for a research agent to vet. Each claim has a
 type (BINARY yes/no, or SCALE 1-5) and enough context to evaluate.
 
-**Our method**: Extract SVD singular value spectra from a pretrained GPT-2,
-compress to 8 DCT coefficients per weight group (32 numbers total), use these
-to shape the initialization of a fresh randomly-initialized GPT-2, with 50%
-directional alignment of right singular vectors. Train at 2x the standard
-learning rate. Achieves 3.33x faster convergence (PPL 572 vs 1904 at step 750)
-on WikiText-2 with GPT-2 small (124M params).
+**Our method (PRISM)**: A family of spectral transfer techniques for neural
+network initialization. Core techniques: **Spectral Imprint** (extract SVD
+spectra from pretrained GPT-2, compress to 8 DCT coefficients per weight
+group = 32 numbers total, reshape fresh model's SVs to match) and
+**EigenTransfer** (50% directional alignment of right singular vectors with
+pretrained directions). Train at 2x the standard learning rate. Achieves
+3.33x faster convergence (PPL 572 vs 1904 at step 750) on WikiText-2 with
+GPT-2 small (124M params).
 
 ---
 

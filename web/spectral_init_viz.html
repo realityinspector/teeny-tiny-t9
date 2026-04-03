@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SIPE: 3.33x Faster GPT-2 Training from Scratch</title>
+<title>PRISM: 3.33x Faster GPT-2 Training from Scratch</title>
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -465,7 +465,7 @@ footer a:hover {
 
 <!-- 1. HERO -->
 <div class="hero">
-  <div class="hero-method-name">Spectral Initialization via Pretrained Extraction</div>
+  <div class="hero-method-name">PRISM &mdash; Prismic Pretraining Acceleration</div>
   <div class="hero-counter" id="hero-counter">1.0x</div>
   <p class="hero-subtitle">faster convergence on GPT-2 training from scratch</p>
   <p class="hero-desc">
@@ -485,7 +485,7 @@ footer a:hover {
     <div class="section-label">The Result</div>
     <h2>Convergence Comparison</h2>
     <p class="section-desc">
-      Validation perplexity on WikiText-2 during the first 1000 training steps. The full SIPE method reaches PPL 572 at step 750 &mdash; 3.33x better than standard orthogonal initialization.
+      Validation perplexity on WikiText-2 during the first 1000 training steps. The full PRISM method reaches PPL 572 at step 750 &mdash; 3.33x better than standard orthogonal initialization.
     </p>
     <div class="chart-wrap" id="convergence-chart-wrap">
       <div id="convergence-chart"></div>
@@ -956,7 +956,7 @@ function drawHeatmap(container, matrix, size, cellSize, gap) {
   const yS = d3.scaleLinear().domain([0, 1]).range([h3 - 4, 4]);
   // Baseline stays high
   const baseLine = Array.from({length: pts}, (_, i) => 0.9 - i * 0.005);
-  // SIPE drops fast
+  // PRISM drops fast
   const sipeLine = Array.from({length: pts}, (_, i) => 0.9 - (i / (pts - 1)) * 0.65);
   const lineGen = d3.line().x((d, i) => xS(i)).y(d => yS(d)).curve(d3.curveMonotoneX);
   svg3.append('path').datum(baseLine).attr('d', lineGen).attr('fill', 'none').attr('stroke', '#f87171').attr('stroke-width', 1.5).attr('stroke-dasharray', '4,3');

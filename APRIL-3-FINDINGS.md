@@ -1,4 +1,4 @@
-# Spectral Initialization via Pretrained Extraction (SIPE)
+# PRISM: Prismic Pretraining Acceleration
 ## Findings as of April 3, 2026
 
 **Model**: GPT-2 small (124M params, 12 layers, 768 hidden, 12 heads)

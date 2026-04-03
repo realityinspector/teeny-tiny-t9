@@ -1,6 +1,6 @@
 {
   "baseline": 818.0,
-  "best": 713.66397655524,
+  "best": 592.2155781418753,
   "experiments": [
     {
       "name": "spike_skip_10x",
@@ -127,6 +127,70 @@
       "ppl_750": 1670.173014919824,
       "ppl_1000": 860.7941278602138,
       "elapsed": 8086.67093873024
+    },
+    {
+      "name": "noise_0.1",
+      "description": "Add N(0,0.1) noise to per-layer spectra. Tests robustness of spectral signal.",
+      "timestamp": "2026-04-02 12:26:09",
+      "ppl_750": 1074.7222226657982,
+      "ppl_1000": 957.2290108169099,
+      "elapsed": 4002.44668507576
+    },
+    {
+      "name": "noise_0.3",
+      "description": "Add N(0,0.3) noise. Heavy corruption \u2014 if this still works, the signal is coarse.",
+      "timestamp": "2026-04-02 14:30:08",
+      "ppl_750": 27945390.515276205,
+      "ppl_1000": 1079.3093181498946,
+      "elapsed": 7403.392554998398
+    },
+    {
+      "name": "medium_spectra",
+      "description": "Extract spectra from GPT-2 medium (355M) instead of small (124M). Richer task structure?",
+      "timestamp": "2026-04-02 15:05:40",
+      "ppl_750": 1016.2550674344429,
+      "ppl_1000": 947.8704297161313,
+      "elapsed": 2005.6600120067596
+    },
+    {
+      "name": "shuffled_layers",
+      "description": "Per-layer spectra but randomly shuffled across layers. Tests whether layer-specific information matters.",
+      "timestamp": "2026-04-02 15:37:03",
+      "ppl_750": 1383.529895813735,
+      "ppl_1000": 1332.0190347584457,
+      "elapsed": 1852.5262248516083
+    },
+    {
+      "name": "spike_skip_50x_warmup_200",
+      "description": "Spike skip + longer warmup. Two stability interventions.",
+      "timestamp": "2026-04-02 16:08:00",
+      "ppl_750": 1343.876833574856,
+      "ppl_1000": 1161.4184256972364,
+      "elapsed": 1825.391529083252
+    },
+    {
+      "name": "unfold_seed",
+      "description": "24 meta-params fitted to pretrained GPT-2, unfolded into layer-specific spectra. No alignment.",
+      "timestamp": "2026-04-02 16:39:18",
+      "ppl_750": 850.4643703678908,
+      "ppl_1000": 840.5323726934215,
+      "elapsed": 1826.694009065628
+    },
+    {
+      "name": "unfold_aligned",
+      "description": "24 meta-params + pretrained V directions. The full unfolding: seed \u2192 spectra + alignment \u2192 weights.",
+      "timestamp": "2026-04-02 17:10:20",
+      "ppl_750": 1557.075662846117,
+      "ppl_1000": 810.2612099136014,
+      "elapsed": 1826.2640030384064
+    },
+    {
+      "name": "lr_2x_UV_stable",
+      "description": "2x LR + 50% UV alignment + spike_skip + clip_0.5. Combining the two best axes.",
+      "timestamp": "2026-04-02 17:42:50",
+      "ppl_750": 592.2155781418753,
+      "ppl_1000": 599.3027534936334,
+      "elapsed": 1908.3555700778961
     }
   ]
 }

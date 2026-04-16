@@ -1,7 +1,5 @@
 # IMT — Inverse Morphogenic Training
 
-> **[Read the interactive whitepaper →](https://teeny-tiny-t9-production.up.railway.app)**
-
 **The shape of intelligence: deriving neural network capability from topological structure.**
 
 A 3D shape's Laplacian eigenspectrum, when used to constrain neural network
@@ -115,15 +113,6 @@ The winning crystal is exported as `t9_crystal_triangle_strong_CF.stl`.
 Print at default scale (~32 × 29 × 12 mm). Three spheres connected by
 tubes, with the C–F tube visibly thicker than the others. That is the
 shape of T9 intelligence.
-
-## Whitepaper
-
-The interactive research whitepaper is deployed at the link above. Source is in `web/`.
-
-To run locally:
-```bash
-cd web && npm install && npm run dev
-```
 
 ## Requirements
 
